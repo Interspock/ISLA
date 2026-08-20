@@ -1,92 +1,48 @@
 # Archivo visual de ISLA
 
-Este directorio reúne fotografías, capturas y diagramas originales utilizados para documentar el proyecto.
+Este directorio reúne fotografías y capturas **reales del proceso**. No se utilizan imágenes generadas para documentar hardware, reparaciones o etapas históricas.
 
-La prioridad es utilizar **material propio del proceso real** antes que imágenes promocionales o fotografías tomadas de Internet.
+## Material incorporado
 
-Las imágenes no cumplen sólo una función decorativa: deben ayudar a conservar información técnica e histórica.
+### Casio CZ-101
 
-## Estructura prevista
+- `cz101/01-front-panel-waveforms.jpg`
+- `cz101/02-keyboard-overview.jpg`
+- `cz101/03-model-power-label.jpg`
+- `cz101/04-interior-mainboards.jpg`
+- `cz101/05-mainboard-detail.jpg`
+- `cz101/06-ribbon-connector.jpg`
+- `cz101/07-wiring-detail.jpg`
+- `cz101/08-internal-wiring.jpg`
+- `cz101/09-cartridge-board.jpg`
+- `cz101/10-board-wire-detail.jpg`
+- `cz101/11-display-waveform-detail.jpg`
+- `cz101/12-handwritten-patches.jpg`
 
-```text
-media/
-├── cz101/
-│   ├── exterior
-│   ├── interior
-│   ├── placas
-│   ├── cartucho
-│   ├── patches-manuscritos
-│   └── librarian
-├── audiolink/
-│   ├── hardware
-│   ├── usb-debug
-│   ├── driver
-│   └── sysex-loopback
-├── isla800/
-│   ├── arquitectura
-│   ├── interfaz
-│   ├── benchmark
-│   └── analisis-sonoro
-├── ensoniq/
-│   ├── sq1
-│   ├── interior
-│   ├── brother
-│   └── diskettes
-├── midi/
-│   ├── midi-thru
-│   └── topologia
-└── muse/
-    ├── overview
-    ├── midi-routing
-    ├── audio-routing
-    └── sesiones
-```
+### Midiplus AudioLink Plus II
 
-Git no conserva directorios vacíos, por lo que las carpetas se irán creando al incorporar las primeras imágenes.
+- `audiolink/01-rear-panel.jpg`
+- `audiolink/02-front-panel.jpg`
 
-## Criterios para cada imagen
+### Ensoniq SQ-1
 
-Cada fotografía debería tener, cuando sea relevante:
+- `ensoniq/01-sq1-open.jpg`
 
-- fecha aproximada;
-- dispositivo;
-- etapa del proceso;
-- breve explicación;
-- autor/fuente;
-- licencia;
-- advertencia si la imagen contiene información histórica cuya interpretación todavía es incierta.
+### MIDI
 
-El pie de imagen debe explicar **por qué importa**, no limitarse a repetir lo que se ve.
+- `midi/01-passive-thru-box.jpg`
+- `midi/02-passive-thru-box-angle.jpg`
 
-Ejemplo:
+### MusE
 
-```markdown
-![Hoja original de patches del CZ-101](media/cz101/patches-originales.jpg)
+- `muse/01-cz-routing.jpg`
 
-*Anotaciones conservadas desde los años ochenta. Estos parámetros,
-escritos originalmente para conservar sonidos sin almacenamiento digital
-externo, están siendo transformados nuevamente en datos estructurados y
-patches SysEx.*
-```
+### Estudio
 
-## Fotografías de placas y reparaciones
+- `studio/01-genius-speakers.jpg`
 
-En fotografías internas conviene, cuando sea posible:
+## Criterio documental
 
-1. tomar una vista general antes de desmontar;
-2. fotografiar conectores y orientación de cables;
-3. tomar primeros planos de referencias de placas y componentes;
-4. conservar una imagen del estado original antes de limpiar o reparar;
-5. documentar el estado posterior.
+Las fotografías cumplen una función técnica e histórica: registrar estado original, conexiones, orientación de cables, placas, interfaces y decisiones del proceso. Cuando existe un duplicado exacto se conserva una sola copia.
 
-Estas fotografías pueden ser útiles años después para reconstruir conexiones o revisar una reparación.
-
-## Imágenes externas
-
-Si fuera necesario utilizar una imagen ajena, debe documentarse explícitamente su fuente y licencia.
-
-No se incorporarán automáticamente imágenes comerciales encontradas en la web sólo porque estén públicamente accesibles.
-
-## Licencia
-
-Salvo indicación contraria, las fotografías y diagramas propios incorporados al proyecto se publicarán bajo **CC BY-SA 4.0**, igual que la documentación.
+Salvo indicación contraria, las fotografías propias se publican bajo **CC BY-SA 4.0** junto con la documentación.
