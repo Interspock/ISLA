@@ -16,12 +16,22 @@ En el camino hubo que hacer bastante más que instalar un DAW:
 - convertir anotaciones manuscritas de patches en datos nuevamente utilizables;
 - desarrollar un librarian Web MIDI para el Casio CZ-101;
 - extender un driver libre de kernel para que una Midiplus AudioLink Plus II pudiera funcionar correctamente bajo GNU/Linux;
-- corregir transmisión MIDI/SysEx hasta obtener transferencias de miles de bytes sin corrupción;
+- corregir transmisión MIDI/SysEx y, más tarde, un fallo de MIDI IN que aparecía después de resets USB por cambio de sample rate;
 - reconstruir en software la arquitectura de un Korg Poly-800 perdido, dando origen a **ISLA 800**;
 - estudiar la recuperación de bancos, secuencias y disquetes históricos del Ensoniq SQ-1;
-- integrar hardware, instrumentos virtuales libres y audio multipista alrededor de **MusE**.
+- consolidar **MusE** como centro de producción de una estación híbrida de hardware y software;
+- aprender que la topología USB, los clocks de audio y hasta un hub aparentemente inocente pueden decidir si una sesión tiene cero XRUNs o se vuelve inutilizable;
+- sumar una entrada de audio USB auxiliar de muy bajo costo, caracterizarla eléctricamente y hacerla convivir con JACK mediante `alsa_in`.
 
 > **La computadora y los instrumentos deben estar al servicio del músico, y no el músico sometido a las restricciones de una plataforma, una licencia, un fabricante o un formato cerrado.**
+
+## Estado actual
+
+La implementación principal utiliza una ThinkPad T520 como núcleo, **MusE** como DAW, **JACK** para audio y una **Midiplus AudioLink Plus II** como interfaz principal. El hardware externo convive con instrumentos y efectos LV2 dentro de una misma sesión.
+
+La AudioLink funciona mediante el driver libre **Ozzy**, incluyendo audio 4×4, MIDI DIN, SysEx largo y recuperación correcta de MIDI IN después de cambios de sample rate. El Ensoniq SQ-1 puede utilizarse como teclado/controlador MIDI además de fuente sonora.
+
+La estación también incorpora una entrada USB mono secundaria usando un dongle genérico de micrófono. La AudioLink permanece como reloj maestro de JACK y la entrada secundaria se incorpora mediante `alsa_in`, manteniendo separados los controladores USB críticos.
 
 ## El proyecto, en imágenes
 
@@ -41,7 +51,7 @@ En el camino hubo que hacer bastante más que instalar un DAW:
 
 ![Midiplus AudioLink Plus II](media/audiolink/02-front-panel.jpg)
 
-*La AudioLink Plus II terminó funcionando bajo GNU/Linux mediante trabajo sobre el driver libre Ozzy, incluyendo la corrección del transporte MIDI/SysEx.*
+*La AudioLink Plus II terminó funcionando bajo GNU/Linux mediante trabajo sobre el driver libre Ozzy, incluyendo correcciones de transporte MIDI/SysEx y de MIDI IN después de resets USB.*
 
 ### Un estudio híbrido
 
@@ -56,6 +66,7 @@ En el camino hubo que hacer bastante más que instalar un DAW:
 3. **Reparabilidad** — la falta de soporte comercial no convierte automáticamente al hardware en residuo electrónico.
 4. **Preservación** — un patch, una secuencia, un sonido o un instrumento también son patrimonio tecnológico y musical.
 5. **Reproducibilidad** — cada descubrimiento importante debería terminar convertido en código, documentación, presets, imágenes de disco, SysEx o procedimientos reconstruibles.
+6. **Medición antes que intuición** — niveles, clocks, USB, ruido, DC offset y fallos de drivers se diagnostican mejor midiendo que adivinando.
 
 ## Documentación
 
@@ -64,6 +75,7 @@ En el camino hubo que hacer bastante más que instalar un DAW:
 - [Preservación tecnológica musical](PRESERVATION.md)
 - [Casio CZ-101](docs/cz101.md)
 - [Midiplus AudioLink Plus II](docs/audiolink.md)
+- [Entrada USB auxiliar y topología USB](docs/usb-audio-input.md)
 - [ISLA 800 / Poly-800](docs/isla800.md)
 - [Ensoniq SQ-1 y archivos históricos](docs/ensoniq-sq1.md)
 - [MusE como centro de producción](docs/muse.md)
