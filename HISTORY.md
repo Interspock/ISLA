@@ -99,7 +99,9 @@ De esa investigación surgió también un **librarian/editor para el Casio CZ-10
 
 En lugar de depender de una aplicación propietaria abandonada o de software diseñado para otra plataforma, se desarrolló una aplicación web basada en tecnologías abiertas.
 
-El navegador utiliza Web MIDI y puede comunicarse directamente con el sintetizador. Durante su desarrollo fue necesario investigar mensajes MIDI, Program Change, estructura SysEx del CZ, recepción y transmisión de patches y representación de parámetros.
+El navegador utiliza Web MIDI y puede comunicarse directamente con el sintetizador. El librarian evolucionó desde una prueba de SysEx hasta una herramienta real: edición visual de envolventes, patches persistentes, importación/exportación, destinos Edit buffer o INTERNAL 1–16, auto-audición, Undo/Redo, comparación A/B, ayuda de síntesis y un preview PD experimental.
+
+Una decisión importante fue hacer evolucionar el formato sin romper las bibliotecas existentes. Las nuevas propiedades son opcionales y los patches antiguos continúan siendo legibles.
 
 El librarian no intenta reemplazar al CZ. Hace exactamente lo contrario:
 
@@ -135,13 +137,24 @@ La solución fue trabajar sobre **Ozzy**, un driver libre, y extenderlo para sop
 
 Esto implicó trabajo a nivel kernel y USB: identificación del dispositivo, análisis de endpoints, inicialización, handshake, audio USB, MIDI, buffering y transmisión SysEx.
 
-Durante las pruebas apareció además un problema especialmente interesante: mensajes SysEx relativamente largos eran truncados. Un paquete transmitido podía llegar parcialmente al otro extremo. Eso hacía imposible confiar en la interfaz para administrar patches completos de sintetizadores.
+Durante las primeras pruebas apareció un problema especialmente interesante: mensajes SysEx relativamente largos eran truncados. Un paquete transmitido podía llegar parcialmente al otro extremo. Eso hacía imposible confiar en la interfaz para administrar patches completos de sintetizadores.
 
 Se investigó entonces el camino completo de transmisión MIDI dentro del driver. Finalmente se reescribieron partes de la gestión MIDI, introduciendo buffering, cola y manejo correcto de las fases de transmisión.
 
 Se desarrollaron además herramientas de prueba de loopback y captura.
 
 Los resultados terminaron siendo concluyentes: transferencias de 80, 512, 1024 y 4096 bytes podían completarse con **TX == RX**.
+
+Meses después apareció un segundo bug, esta vez en MIDI IN. Al usar el Ensoniq SQ-1 como controlador, un cambio de sample rate podía resetear la AudioLink y hacer que MIDI IN pareciera morir. El dispositivo normalmente entrega registros de cinco bytes —cuatro slots MIDI y `0xEB` de framing—, pero después del reset fue observado enviando completions cortas, a menudo de un byte raw. El parser original ignoraba transferencias menores a cinco bytes.
+
+La corrección fue pequeña pero reveladora:
+
+```c
+if (length < 5)
+    return length;
+```
+
+Esas transferencias cortas pasan directamente a ALSA, mientras el framing normal continúa procesándose como antes. La solución quedó validada atravesando cambios 44.1 kHz ↔ 96 kHz sin perder MIDI IN.
 
 El hardware que inicialmente no tenía soporte satisfactorio bajo Linux terminó formando parte nativa de la estación.
 
@@ -197,6 +210,8 @@ Otro instrumento incorporado al proyecto es el **Ensoniq SQ-1**.
 
 El sintetizador todavía funciona, aunque su batería de respaldo está agotada y una tecla grave necesita reparación.
 
+Su teclado amplio lo convirtió además en candidato natural a controlador MIDI principal. Esa integración terminó siendo técnicamente importante porque fue precisamente el SQ-1 el que permitió detectar el bug de MIDI IN post-reset de la AudioLink. Una vez corregido Ozzy, el teclado pudo atravesar cambios de sample rate sin perder la entrada MIDI.
+
 Pero su historia abre otro frente de preservación.
 
 Durante los años en que se utilizaba el SQ-1, los patches y secuencias se almacenaban mediante un secuenciador hardware **Brother** con disquetes de 3½ pulgadas.
@@ -239,7 +254,7 @@ La estación necesita instrumentos modernos, pero intenta mantener el mismo crit
 
 Entre los componentes utilizados o evaluados se encuentran Surge XT, Drumlabooh, kits Hydrogen, instrumentos propios, ISLA 800 y samples almacenados en formatos convencionales.
 
-La batería, por ejemplo, puede construirse mediante Drumlabooh cargando kits abiertos en lugar de depender de una colección cerrada asociada a un DAW determinado.
+Drumlabooh pasó a utilizarse también en modo multi-output, separando piezas de batería en buses de MusE para procesarlas de manera independiente.
 
 Esto tiene una ventaja importante:
 
@@ -265,31 +280,41 @@ Eso llevó a una decisión importante:
 
 ---
 
-## 12. MusE como centro actual de ISLA
+## 12. MusE como centro de ISLA
 
 La exploración condujo finalmente a **MusE**.
 
 MusE comparte varios principios importantes con ISLA: GNU/Linux como plataforma natural, software libre, fuerte orientación MIDI, audio multipista, instrumentos virtuales, integración con JACK, routing, soporte de hardware externo, edición piano roll y automatización.
 
-Las primeras pruebas ya permitieron montar el flujo elemental:
+Lo que comenzó como una evaluación terminó consolidándose como flujo de trabajo cotidiano.
 
-**control MIDI → sintetizador hardware → retorno de audio → pista del DAW.**
+La estación actual permite montar de forma estable:
 
-Por ejemplo, para el CZ-101 se puede disponer una pista MIDI que transmite las notas y una pista de audio que recibe físicamente la salida del CZ mediante la AudioLink.
+**control MIDI → sintetizador hardware → retorno de audio → procesamiento → mezcla.**
+
+Por ejemplo, para el CZ-101 se dispone una pista MIDI que transmite las notas y una pista de audio que recibe físicamente la salida del CZ mediante la AudioLink.
 
 Así el sintetizador hardware aparece dentro del proyecto casi como si fuera otro instrumento virtual. La diferencia es que su motor fue fabricado en 1985 y está dentro de una caja con teclado.
 
-MusE representa, por el momento, el punto donde convergen todos los caminos anteriores.
+MusE es hoy el punto donde convergen los caminos anteriores.
 
 ---
 
-## 13. El estudio híbrido
+## 13. El estudio híbrido se extiende hasta USB
 
 ISLA termina cuestionando también la vieja división entre hardware y software.
 
 Desde el DAW pueden coexistir un CZ-101 real, un SQ-1 real, un K1r real, Surge XT, ISLA 800, baterías sampleadas, efectos LV2, MIDI USB, MIDI DIN y audio analógico convertido por la AudioLink.
 
-Musicalmente todos son simplemente fuentes sonoras.
+A esa arquitectura se sumó una entrada USB mono auxiliar de muy bajo costo para evitar consumir una entrada fija de la AudioLink.
+
+La experiencia fue instructiva. El dongle incluía bias de aproximadamente 2.4 V para micrófono electret, por lo que se construyó un adaptador con capacitor electrolítico de 10 µF en serie. Su mixer ALSA estaba inicialmente en +27 dB y se estabilizó en 0 dB con AGC apagado.
+
+Después apareció una aparente contradicción: el oído percibía silencio, pero el medidor mostraba cerca de -36 dBFS. Una captura directa reveló que casi toda esa energía era **offset DC**. Al removerlo con un high-pass, el piso de ruido medido cayó hasta aproximadamente -84 dBFS RMS.
+
+La entrada se incorporó a JACK con `alsa_in`, dejando la AudioLink como master y compensando el clock independiente del dongle.
+
+Musicalmente todos siguen siendo simplemente fuentes sonoras.
 
 Cada pista sabe dónde envía MIDI, de dónde recibe audio, qué canal utiliza, qué efectos procesa y dónde termina su señal.
 
@@ -309,7 +334,9 @@ Un estudio digital no debería quedar inutilizable cada pocos años simplemente 
 
 GNU/Linux permite aprovechar hardware maduro durante muchísimo tiempo. Y cuando el software propio se diseña con criterios razonables de eficiencia, resulta posible ejecutar sintetizadores, MIDI, audio multipista y efectos en equipos que el mercado convencional considera antiguos.
 
-Por eso los benchmarks de DSP, el control de carga y la selección cuidadosa de plugins forman parte del proyecto.
+La T520 terminó enseñando además que “USB” no es una sola cosa. Sus controladores EHCI internos y una ExpressCard xHCI permiten distribuir dispositivos críticos en dominios distintos. En la configuración estable, la AudioLink permanece aislada como master de JACK y los dispositivos auxiliares se ubican en otro controlador.
+
+Por eso los benchmarks de DSP, el control de carga, la topología USB y la selección cuidadosa de plugins forman parte del proyecto.
 
 ---
 
@@ -329,6 +356,8 @@ Para eso cada descubrimiento intenta convertirse en alguno de estos elementos:
 - manifiesto;
 - procedimiento reproducible.
 
+El arranque cotidiano también comenzó a tratarse como infraestructura reproducible. Un launcher prepara la ThinkPad para modo DAW, verifica dispositivos y controladores USB, deshabilita temporalmente cámara y Bluetooth, inicia o valida JACK, configura la entrada USB auxiliar cuando existe, arranca `alsa_in` y restaura el hardware al salir.
+
 Si mañana desaparece la instalación actual, debería ser posible reconstruirla.
 
 No necesariamente pulsando un único botón, pero sí siguiendo información que permanezca bajo control de quien la utiliza.
@@ -339,7 +368,11 @@ No necesariamente pulsando un único botón, pero sí siguiendo información que
 
 ISLA se construyó mediante experimentación.
 
-Hubo mensajes SysEx truncados, dispositivos USB que no respondían como indicaba la expectativa inicial, problemas de routing, DAWs que resultaban conceptualmente incómodos, sintetizadores que encendían pero no entregaban audio, botones endurecidos, baterías agotadas y módulos de kernel que requerían cambios.
+Hubo mensajes SysEx truncados, MIDI IN que desaparecía después de un reset, dispositivos USB que no respondían como indicaba la expectativa inicial, problemas de routing, DAWs que resultaban conceptualmente incómodos, sintetizadores que encendían pero no entregaban audio, botones endurecidos, baterías agotadas y módulos de kernel que requerían cambios.
+
+También hubo un hub USB aparentemente inocente que, en una topología concreta, coincidió con una tormenta de errores de `alsa_in` y miles de XRUNs. Volver a los puertos directos de otro controlador devolvió la prueba a XRUN = 0.
+
+Hubo un vúmetro que parecía mostrar un piso de ruido horrible y en realidad estaba midiendo continua. Hubo un dedo tocando un tip abierto que se convirtió en una sonda improvisada del campo eléctrico de 50 Hz y permitió ver armónicos en tiempo real con el analizador de un EQ.
 
 Cada problema aportó información.
 
@@ -359,7 +392,7 @@ Una plataforma propietaria ofrece comodidad a cambio de dependencia.
 
 ISLA intenta obtener comodidad **a partir del conocimiento**.
 
-Para lograr que una interfaz funcione hubo que entender parte de USB y del kernel. Para recuperar un sintetizador hubo que estudiar SysEx. Para recrear otro hubo que estudiar DSP. Para rescatar disquetes probablemente será necesario estudiar codificación magnética y formatos antiguos.
+Para lograr que una interfaz funcione hubo que entender parte de USB y del kernel. Para recuperar un sintetizador hubo que estudiar SysEx. Para recrear otro hubo que estudiar DSP. Para sumar una entrada barata hubo que separar bias, ganancia, DC, noise floor, clocks y topología USB. Para rescatar disquetes probablemente será necesario estudiar codificación magnética y formatos antiguos.
 
 Pero cada dificultad resuelta produce algo que permanece.
 
@@ -373,7 +406,9 @@ En ISLA conviven tecnologías creadas en épocas extraordinariamente diferentes.
 
 Un posible recorrido de una nota es hoy:
 
-**Akai MPK mini → USB MIDI → GNU/Linux → MusE → ALSA/JACK → driver libre de AudioLink → MIDI DIN → Casio CZ-101 → síntesis Phase Distortion de 1985 → señal analógica → AudioLink → conversión A/D → JACK → MusE → plugin libre → archivo WAV.**
+**Ensoniq SQ-1 o Akai MPK mini → MIDI → GNU/Linux → MusE → ALSA/JACK → driver libre de AudioLink → MIDI DIN → Casio CZ-101 → síntesis Phase Distortion de 1985 → señal analógica → AudioLink → conversión A/D → JACK → MusE → plugin libre → archivo WAV.**
+
+Otro recorrido puede entrar por un pequeño dispositivo USB mono, atravesar `alsa_in`, eliminar un offset DC con un LV2 y terminar en la misma mezcla.
 
 La nota atraviesa más de cuarenta años de historia tecnológica.
 
@@ -399,13 +434,15 @@ Significa utilizarla sin entregar el control.
 
 ISLA no está terminado. Probablemente nunca lo esté.
 
-Actualmente MusE aparece como candidato a convertirse en su centro de producción, pero el proyecto continuará evolucionando alrededor de él.
+MusE ya no es un candidato: es el centro actual de producción. La AudioLink ya no es “hardware a hacer funcionar”: es la interfaz principal, con audio, MIDI, SysEx y recuperación de MIDI IN después de resets. El librarian del CZ ya no es una idea: es una herramienta utilizable. La topología USB y el launcher ya forman parte explícita de la arquitectura.
 
-Quedan muchas líneas abiertas: completar la restauración del CZ-101, continuar el librarian y la biblioteca de patches, reconstruir sonidos históricos, evolucionar ISLA 800, reparar el SQ-1, preservar los disquetes Brother, recuperar secuencias y bancos SysEx, limpiar el K1r, ampliar la biblioteca de baterías, documentar routing y consolidar `/opt/isla-audio`.
+Las líneas abiertas son ahora más específicas: ampliar recepción y gestión de bancos del librarian, seguir recuperando sonidos históricos, evolucionar ISLA 800, completar mantenimiento físico pendiente en SQ-1/K1r, preservar los disquetes Brother, recuperar secuencias y bancos SysEx, ampliar instrumentos y kits, terminar de caracterizar musicalmente la entrada USB auxiliar con fuentes reales y continuar documentando problemas de interferencia y compatibilidad electromagnética.
 
-Pero el problema fundamental ya fue resuelto.
+El problema fundamental ya fue resuelto.
 
 Las piezas pueden comunicarse.
+
+Ahora el trabajo consiste en **hacer que esa comunicación sea durable, medible y enseñable**.
 
 ---
 
@@ -422,7 +459,8 @@ un sintetizador cuando ya no estaba el sintetizador;
 un librarian cuando la interfaz original resultaba insuficiente;  
 una representación digital cuando sólo quedaba un papel;  
 un puente hacia disquetes cuando el formato dejó de ser común;  
-una infraestructura cuando los programas aislados no alcanzaban.**
+una infraestructura cuando los programas aislados no alcanzaban;  
+y una metodología de diagnóstico cuando los síntomas engañaban.**
 
 Y alrededor de todas esas piezas apareció una idea coherente.
 
@@ -448,7 +486,7 @@ ISLA no persigue la nostalgia tecnológica.
 
 Utiliza el pasado, el presente y el software libre para construir continuidad.
 
-Un Casio CZ-101 de los años ochenta, un patch recuperado de una hoja manuscrita, una Midiplus cuyo driver hubo que escribir, un Poly-800 reconstruido en código y MusE ejecutándose sobre GNU/Linux pueden formar parte del mismo instrumento ampliado.
+Un Casio CZ-101 de los años ochenta, un patch recuperado de una hoja manuscrita, una Midiplus cuyo driver hubo que extender, un Poly-800 reconstruido en código, un SQ-1 convertido también en controlador y MusE ejecutándose sobre GNU/Linux pueden formar parte del mismo instrumento ampliado.
 
 Ese instrumento es ISLA.
 
